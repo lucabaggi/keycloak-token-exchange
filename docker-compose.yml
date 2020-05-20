@@ -1,0 +1,67 @@
+version: '3.7'
+
+services:
+  postgres:
+      image: postgres
+      container_name: "postgres"
+      volumes:
+        - "./postgres_scripts:/docker-entrypoint-initdb.d/"
+        - "./postgres_data:/var/lib/postgresql/data"
+      environment:
+        POSTGRES_DB: keycloak
+        POSTGRES_USER: keycloak
+        POSTGRES_PASSWORD: password
+      hostname: postgres
+  keycloak:
+      image: jboss/keycloak:7.0.1
+      container_name: "keycloak"
+      environment:
+        DB_VENDOR: POSTGRES
+        DB_ADDR: postgres
+        DB_DATABASE: keycloak
+        DB_USER: keycloak
+        DB_SCHEMA: keycloak
+        DB_PASSWORD: password
+        KEYCLOAK_USER: admin
+        KEYCLOAK_PASSWORD: admin
+        KEYCLOAK_IMPORT: /tmp/import_folder/realm.json
+        JAVA_OPTS: -server -Xms64m -Xmx512m -XX:MetaspaceSize=96M -XX:MaxMetaspaceSize=256m -Djava.net.preferIPv4Stack=true -Djboss.modules.system.pkgs=org.jboss.byteman -Djava.awt.headless=true -Dkeycloak.profile=preview
+        #KEYCLOAK_LOGLEVEL: DEBUG
+        #ROOT_LOGLEVEL: DEBUG
+        # Uncomment the line below if you want to specify JDBC parameters. The parameter below is just an example, and it shouldn't be used in production without knowledge. It is highly recommended that you read the PostgreSQL JDBC driver documentation in order to use it.
+        #JDBC_PARAMS: "ssl=true"
+      hostname: keycloak
+      volumes:
+        - "./export_folder/keycloak:/tmp/export_folder"
+        - "./import_folder/keycloak:/tmp/import_folder"
+      ports:
+        - 8090:8080
+      depends_on:
+        - postgres
+  external_idp:
+      image: jboss/keycloak:7.0.1
+      container_name: "external_idp"
+      environment:
+        DB_VENDOR: POSTGRES
+        DB_ADDR: postgres
+        DB_DATABASE: keycloak
+        DB_USER: keycloak
+        DB_SCHEMA: external_idp
+        DB_PASSWORD: password
+        KEYCLOAK_USER: admin
+        KEYCLOAK_PASSWORD: admin
+        KEYCLOAK_IMPORT: /tmp/import_folder/realm.json
+        PROXY_ADDRESS_FORWARDING: "true"
+        JAVA_OPTS: -server -Xms64m -Xmx512m -XX:MetaspaceSize=96M -XX:MaxMetaspaceSize=256m -Djava.net.preferIPv4Stack=true -Djboss.modules.system.pkgs=org.jboss.byteman -Djava.awt.headless=true -Dkeycloak.profile=preview
+        #KEYCLOAK_LOGLEVEL: DEBUG
+        #ROOT_LOGLEVEL: DEBUG
+        # Uncomment the line below if you want to specify JDBC parameters. The parameter below is just an example, and it shouldn't be used in production without knowledge. It is highly recommended that you read the PostgreSQL JDBC driver documentation in order to use it.
+        #JDBC_PARAMS: "ssl=true"
+      hostname: keycloak
+      volumes:
+        - "./export_folder/external_idp:/tmp/export_folder"
+        - "./import_folder/external_idp:/tmp/import_folder"
+      ports:
+        - 8091:8080
+      depends_on:
+        - postgres
